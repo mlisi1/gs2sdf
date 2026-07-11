@@ -31,7 +31,9 @@ but the legacy class has no save/load, and this step's output has to
 survive a process boundary for Step 9 (marching cubes) to load
 independently, per this project's one-step-one-script convention.
 
-Uses octree-based frustum culling (gs_sensor_core.culling) rather than
+Uses octree-based frustum culling (gs2sdf.common.gaussian_rendering,
+vendored from the sibling gs_sensors repo's gs_sensor_core — copied in
+directly rather than depended on as an installed library) rather than
 rendering the full model every frame: without it, every render() call
 activates (sigmoid/exp/normalize) and rasterizes all ~7M splats
 regardless of camera frustum, which is the actual per-frame memory/
@@ -54,11 +56,11 @@ from scipy.spatial.transform import Rotation
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from gs_sensor_core.culling import load_or_build_octree
-from gs_sensor_core.frames import Pose
-from gs_sensor_core.models.ply_loader import load_gaussian_model
-from gs_sensor_core.render.pipeline import CameraRasterizer
-from gs_sensor_core.camera_profiles.schema import CameraProfile
+from gs2sdf.common.gaussian_rendering.culling import load_or_build_octree
+from gs2sdf.common.gaussian_rendering.frames import Pose
+from gs2sdf.common.gaussian_rendering.models.ply_loader import load_gaussian_model
+from gs2sdf.common.gaussian_rendering.render.pipeline import CameraRasterizer
+from gs2sdf.common.gaussian_rendering.camera_profiles.schema import CameraProfile
 
 
 def w2c_matrix(position: list, rotation_c2w: list) -> np.ndarray:
