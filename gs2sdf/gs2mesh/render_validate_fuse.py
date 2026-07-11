@@ -271,6 +271,15 @@ def main():
             real_count += 1
             progress.set_postfix(interpolated=f"{interp_count}/{num_interp}")
             progress.update(1)
+            if real_count % 20 == 0:
+                # Frustum culling makes num_rendered vary per pose, so
+                # PyTorch's caching allocator grows its reserved pool to
+                # whatever the single busiest frame so far needed, and
+                # never shrinks it back on its own — release what's
+                # actually idle periodically so it doesn't sit stacked
+                # on top of the VoxelBlockGrid's own (real, legitimate)
+                # growth for the rest of the run.
+                torch.cuda.empty_cache()
         else:
             pending_interp.append(pose)
     progress.close()
@@ -278,6 +287,10 @@ def main():
     if prev_real is not None:
         integrate_pose(vbg, intrinsic_t, device, prev_depth, prev_real, args.max_depth)
 
+    # The VoxelBlockGrid is largest right here, at the very end of the
+    # run — free PyTorch's idle reserved memory before save() needs
+    # headroom to serialize the whole hash-map structure.
+    torch.cuda.empty_cache()
     volume_path = args.output_dir / "tsdf_volume.npz"
     vbg.save(str(volume_path))
 
