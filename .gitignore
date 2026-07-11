@@ -1,3 +1,4 @@
 *.md
 test_data/
 tmp/
+__pycache__

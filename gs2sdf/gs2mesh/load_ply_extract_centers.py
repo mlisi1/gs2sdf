@@ -7,37 +7,20 @@ checking, optionally opacity-filtered to drop obvious floaters.
 """
 
 import argparse
+import sys
 from pathlib import Path
 
 import numpy as np
 import open3d as o3d
 from plyfile import PlyData
 
-# DC term of the spherical-harmonic color basis (Y_0^0); this is the
-# standard 3DGS/2DGS convention for recovering an approximate RGB color
-# from f_dc_* alone, ignoring higher-order SH bands.
-SH_C0 = 0.28209479177387814
-
-
-def sigmoid(x: np.ndarray) -> np.ndarray:
-    return 1.0 / (1.0 + np.exp(-x))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from gs2sdf.common.ply_io import load_xyz_opacity_color
 
 
 def load_centers(ply_path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     vertex = PlyData.read(str(ply_path))["vertex"]
-
-    xyz = np.stack([vertex["x"], vertex["y"], vertex["z"]], axis=1).astype(np.float64)
-    # opacity is stored pre-activation (logit); the ply format's contract
-    # is that consumers apply sigmoid, not the training code's choice.
-    opacity = sigmoid(np.asarray(vertex["opacity"], dtype=np.float64))
-    color = np.clip(
-        0.5
-        + SH_C0
-        * np.stack([vertex["f_dc_0"], vertex["f_dc_1"], vertex["f_dc_2"]], axis=1),
-        0.0,
-        1.0,
-    )
-    return xyz, opacity, color
+    return load_xyz_opacity_color(vertex)
 
 
 def main():
